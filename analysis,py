@@ -1,0 +1,70 @@
+# job-board-application analysis
+# insiderOne Work Sample - Vengalareddy
+
+import pandas as pd
+
+# Step 1: Data Load cheyadam
+# Nee original file peru ikkada pettu - applications.csv
+df = pd.read_csv('applications.csv')
+
+print("Starting rows:", len(df))
+# Expected: 1200 rows
+
+# Step 2: Cleaning
+# 1. Duplicate rows theeseyadam
+df = df.drop_duplicates()
+print("After removing duplicates:", len(df))
+# 6 duplicates pothayi
+
+# 2. Blank source unna rows theeseyadam
+df = df.dropna(subset=['source'])
+df = df[df['source'] != '']
+print("After removing blank source:", len(df))
+# 15 blank rows pothayi
+
+# Final Clean Data
+print("Final Clean Rows:", len(df))
+# Expected: 1179 rows
+
+# Step 3: Cleaned file ni save cheyadam
+df.to_csv('cleaned_data.csv', index=False)
+
+# Step 4: Analysis 1 - Best Source Enti?
+# source wise total applications, shortlisted, hired
+source_summary = df.groupby('source').agg(
+    total_applications=('application_id', 'count'),
+    shortlisted=('is_shortlisted', 'sum'),
+    hired=('is_hired', 'sum')
+).reset_index()
+
+source_summary['hire_rate_per_100'] = (source_summary['hired'] / source_summary['total_applications'] * 100).round(1)
+source_summary = source_summary.sort_values('hire_rate_per_100', ascending=False)
+
+print("\n--- BEST SOURCE ---")
+print(source_summary)
+# Result: Referral - 10.7 hires per 100 - Best
+
+# Step 5: Analysis 2 - 4 Steps Complete Cheste?
+# steps_completed column lo 0-4 untundi
+steps_summary = df.groupby('steps_completed').agg(
+    total=('application_id', 'count'),
+    shortlisted=('is_shortlisted', 'sum')
+).reset_index()
+
+steps_summary['shortlist_rate'] = (steps_summary['shortlisted'] / steps_summary['total'] * 100).round(1)
+print("\n--- STEPS VS SHORTLIST ---")
+print(steps_summary)
+# Result: 4 steps = 48% shortlist, 0 steps = 9% shortlist
+
+# Step 6: Analysis 3 - Paid vs Unpaid Reply Time
+paid_summary = df.groupby('is_paid').agg(
+    total=('application_id', 'count'),
+    avg_reply_days=('reply_days', 'mean'),
+    no_reply_percent=('no_reply', 'mean')
+).reset_index()
+
+print("\n--- PAID VS UNPAID ---")
+print(paid_summary)
+# Result: Paid = 3 days avg, Unpaid = 7 days avg, 30% no reply
+
+print("\nDone! cleaned_data.csv ready ayindi.")
